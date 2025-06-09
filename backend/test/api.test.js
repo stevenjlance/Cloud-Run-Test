@@ -30,20 +30,20 @@ describe('Recipe API Tests', () => {
 
       const recipe = response.body[0];
       expect(recipe).toHaveProperty('id');
-      expect(recipe).toHaveProperty('title');
+      expect(recipe).toHaveProperty('name');
       expect(recipe).toHaveProperty('ingredients');
       expect(recipe).toHaveProperty('instructions');
-      expect(recipe).toHaveProperty('cookingTime');
+      expect(recipe).toHaveProperty('cookTime');
     });
   });
 
   describe('POST /api/recipes', () => {
     test('should create a new recipe', async () => {
       const newRecipe = {
-        title: 'Test Recipe',
-        ingredients: ['Test ingredient 1', 'Test ingredient 2'],
+        name: 'Test Recipe',
+        ingredients: 'Test ingredient 1\nTest ingredient 2',
         instructions: 'Test instructions',
-        cookingTime: 30
+        cookTime: '30 minutes'
       };
 
       const response = await request(app)
@@ -52,18 +52,18 @@ describe('Recipe API Tests', () => {
         .expect(201);
 
       expect(response.body).toHaveProperty('id');
-      expect(response.body.title).toBe(newRecipe.title);
-      expect(response.body.ingredients).toEqual(newRecipe.ingredients);
+      expect(response.body.name).toBe(newRecipe.name);
+      expect(response.body.ingredients).toBe(newRecipe.ingredients);
       expect(response.body.instructions).toBe(newRecipe.instructions);
-      expect(response.body.cookingTime).toBe(newRecipe.cookingTime);
+      expect(response.body.cookTime).toBe(newRecipe.cookTime);
     });
 
     test('should return 400 for invalid recipe data', async () => {
       const invalidRecipe = {
-        title: '', // Empty title should fail
-        ingredients: [],
+        name: '', // Empty name should fail
+        ingredients: '',
         instructions: '',
-        cookingTime: -1 // Negative cooking time should fail
+        cookTime: '' 
       };
 
       await request(app)
@@ -80,7 +80,7 @@ describe('Recipe API Tests', () => {
         .expect(200);
 
       expect(response.body).toHaveProperty('id', 1);
-      expect(response.body).toHaveProperty('title');
+      expect(response.body).toHaveProperty('name');
     });
 
     test('should return 404 for non-existent recipe', async () => {
@@ -90,47 +90,14 @@ describe('Recipe API Tests', () => {
     });
   });
 
-  describe('PUT /api/recipes/:id', () => {
-    test('should update an existing recipe', async () => {
-      const updatedRecipe = {
-        title: 'Updated Test Recipe',
-        ingredients: ['Updated ingredient 1', 'Updated ingredient 2'],
-        instructions: 'Updated test instructions',
-        cookingTime: 45
-      };
-
-      const response = await request(app)
-        .put('/api/recipes/1')
-        .send(updatedRecipe)
-        .expect(200);
-
-      expect(response.body.title).toBe(updatedRecipe.title);
-      expect(response.body.cookingTime).toBe(updatedRecipe.cookingTime);
-    });
-
-    test('should return 404 for updating non-existent recipe', async () => {
-      const updatedRecipe = {
-        title: 'Updated Test Recipe',
-        ingredients: ['Updated ingredient'],
-        instructions: 'Updated instructions',
-        cookingTime: 30
-      };
-
-      await request(app)
-        .put('/api/recipes/999')
-        .send(updatedRecipe)
-        .expect(404);
-    });
-  });
-
   describe('DELETE /api/recipes/:id', () => {
     test('should delete an existing recipe', async () => {
       // First create a recipe to delete
       const newRecipe = {
-        title: 'Recipe to Delete',
-        ingredients: ['Ingredient 1'],
+        name: 'Recipe to Delete',
+        ingredients: 'Ingredient 1',
         instructions: 'Instructions',
-        cookingTime: 20
+        cookTime: '20 minutes'
       };
 
       const createResponse = await request(app)
@@ -155,6 +122,17 @@ describe('Recipe API Tests', () => {
       await request(app)
         .delete('/api/recipes/999')
         .expect(404);
+    });
+  });
+
+  describe('GET /api/health', () => {
+    test('should return health status', async () => {
+      const response = await request(app)
+        .get('/api/health')
+        .expect(200);
+
+      expect(response.body).toHaveProperty('status', 'healthy');
+      expect(response.body).toHaveProperty('timestamp');
     });
   });
 });

@@ -2,15 +2,14 @@ import React, { useState, useEffect } from 'react'
 import './App.css'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
-console.log('Using API URL:', API_URL);
 
 function App() {
   const [recipes, setRecipes] = useState([])
   const [newRecipe, setNewRecipe] = useState({
-    title: '',           // Changed from 'name' to 'title'
+    name: '',
     ingredients: '',
     instructions: '',
-    cookingTime: ''      // Changed from 'cookTime' to 'cookingTime'
+    cookTime: ''
   })
   const [loading, setLoading] = useState(false)
 
@@ -43,23 +42,16 @@ function App() {
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      // Convert ingredients string to array for backend
-      const recipeData = {
-        ...newRecipe,
-        ingredients: newRecipe.ingredients.split('\n').filter(ing => ing.trim()).map(ing => ing.trim()),
-        cookingTime: parseInt(newRecipe.cookingTime) || 0  // Convert to number
-      }
-
       const response = await fetch(`${API_URL}/api/recipes`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(recipeData),
+        body: JSON.stringify(newRecipe),
       })
 
       if (response.ok) {
-        setNewRecipe({ title: '', ingredients: '', instructions: '', cookingTime: '' })
+        setNewRecipe({ name: '', ingredients: '', instructions: '', cookTime: '' })
         fetchRecipes()
       }
     } catch (error) {
@@ -80,17 +72,17 @@ function App() {
           <form onSubmit={handleSubmit} className="recipe-form">
             <input
               type="text"
-              name="title"                    // Changed from 'name' to 'title'
-              placeholder="Recipe Title"
-              value={newRecipe.title}
+              name="name"
+              placeholder="Recipe Name"
+              value={newRecipe.name}
               onChange={handleInputChange}
               required
             />
             <input
-              type="number"                   // Changed to number input
-              name="cookingTime"              // Changed from 'cookTime' to 'cookingTime'
-              placeholder="Cooking Time (minutes)"
-              value={newRecipe.cookingTime}
+              type="text"
+              name="cookTime"
+              placeholder="Cook Time (e.g., 30 minutes)"
+              value={newRecipe.cookTime}
               onChange={handleInputChange}
               required
             />
@@ -122,20 +114,14 @@ function App() {
             <div className="recipes-grid">
               {recipes.map((recipe) => (
                 <div key={recipe.id} className="recipe-card">
-                  <h3>{recipe.title}</h3>                    {/* Changed from recipe.name */}
-                  <p className="cook-time">⏱️ {recipe.cookingTime} minutes</p>  {/* Changed field name */}
+                  <h3>{recipe.name}</h3>
+                  <p className="cook-time">⏱️ {recipe.cookTime}</p>
                   <div className="ingredients">
                     <h4>Ingredients:</h4>
                     <ul>
-                      {/* Handle ingredients as array from backend */}
-                      {Array.isArray(recipe.ingredients) 
-                        ? recipe.ingredients.map((ingredient, index) => (
-                            <li key={index}>{ingredient}</li>
-                          ))
-                        : recipe.ingredients.split('\n').filter(ing => ing.trim()).map((ingredient, index) => (
-                            <li key={index}>{ingredient.trim()}</li>
-                          ))
-                      }
+                      {recipe.ingredients.split('\n').filter(ing => ing.trim()).map((ingredient, index) => (
+                        <li key={index}>{ingredient.trim()}</li>
+                      ))}
                     </ul>
                   </div>
                   <div className="instructions">
