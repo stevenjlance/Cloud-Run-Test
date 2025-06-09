@@ -43,26 +43,31 @@ jobs:
         cd frontend
         npm test
     
+    - name: Authenticate to Google Cloud
+      if: success()
+      uses: google-github-actions/auth@v1
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+    
     - name: Set up Google Cloud CLI
       if: success()
       uses: google-github-actions/setup-gcloud@v1
       with:
-        service_account_key: ${{ secrets.GCP_SA_KEY }}
         project_id: ${{ secrets.GCP_PROJECT_ID }}
-        export_default_credentials: true
     
     - name: Configure Docker for Google Cloud
       if: success()
       run: |
         gcloud auth configure-docker
-        gcloud auth configure-docker gcr.io
+        gcloud auth configure-docker ${{ secrets.GCP_REGION }}-docker.pkg.dev
     
     - name: Build and push backend image
       if: success()
       run: |
         cd backend
-        docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/recipe-backend:${{ github.sha }} .
-        docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/recipe-backend:${{ github.sha }}
+        docker build -t ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/recipe-app/backend:${{ github.sha }} .
+        docker push ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/recipe-app/backend:${{ github.sha }}
     
     - name: Build and push frontend image
       if: success()
@@ -70,14 +75,14 @@ jobs:
         cd frontend
         # Get the backend URL for the frontend build
         BACKEND_URL=$(gcloud run services describe recipe-backend --region=${{ secrets.GCP_REGION }} --format='value(status.url)' 2>/dev/null || echo "https://recipe-backend-placeholder.run.app")
-        docker build --build-arg VITE_API_URL=$BACKEND_URL -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/recipe-frontend:${{ github.sha }} .
-        docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/recipe-frontend:${{ github.sha }}
+        docker build --build-arg VITE_API_URL=$BACKEND_URL -t ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/recipe-app/frontend:${{ github.sha }} .
+        docker push ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/recipe-app/frontend:${{ github.sha }}
     
     - name: Deploy backend to Cloud Run
       if: success()
       run: |
         gcloud run deploy recipe-backend \
-          --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/recipe-backend:${{ github.sha }} \
+          --image ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/recipe-app/backend:${{ github.sha }} \
           --region ${{ secrets.GCP_REGION }} \
           --platform managed \
           --allow-unauthenticated \
@@ -89,7 +94,7 @@ jobs:
       if: success()
       run: |
         gcloud run deploy recipe-frontend \
-          --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/recipe-frontend:${{ github.sha }} \
+          --image ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/recipe-app/frontend:${{ github.sha }} \
           --region ${{ secrets.GCP_REGION }} \
           --platform managed \
           --allow-unauthenticated \
